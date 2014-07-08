@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="blocks/family/db" VERSION="20140630" COMMENT="XMLDB file for Moodle blocks/family"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
+>
+  <TABLES>
+    <TABLE NAME="local_family" COMMENT="contains family definitions">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="familykey" TYPE="char" LENGTH="50" NOTNULL="true" SEQUENCE="false" COMMENT="The unique visible id of the family"/>
+	  	<FIELD NAME="familynotes" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="notes related to family"/>
+	  </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+    </TABLE>
+     <TABLE NAME="local_family_members" COMMENT="contains family definitions">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="familyid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="The id of the family this user belongs to"/>
+	  	<FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="The userid of this family member"/>
+	  	<FIELD NAME="role" TYPE="char" LENGTH="11" NOTNULL="false" SEQUENCE="false" COMMENT="The role of this family member. ie parent or child"/>
+	  </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+    </TABLE>
+  </TABLES>
+</XMLDB>
