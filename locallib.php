@@ -25,7 +25,7 @@
  *
  */
  
-require_once($CFG->dirroot . '/blocks/family/lib.php');
+require_once($CFG->dirroot . '/local/family/lib.php');
 
 class local_family_manager {
 
