@@ -48,7 +48,7 @@ class local_family_manager {
 
 
   /**
-     * Add a family activity
+     * Add a family role
      * @param integer group id
      * @param integer course module id
      * @return id of family or false if already added
@@ -63,7 +63,12 @@ class local_family_manager {
             $member->familyid= $familyid;
 			$member->userid= $userid;
 			$member->role= $role;
-            return $DB->insert_record('local_family_members', $member, true);
+           if ($DB->insert_record('local_family_members', $member, true)){
+            	$this->local_family_sync_parentrole($familyid);
+            	return true;
+            }else{
+            	return false;
+            }
        } else {
             return false;
        }
@@ -98,7 +103,128 @@ class local_family_manager {
     */
     public function local_family_delete_role($id) {
         global $DB;
-         return $DB->delete_records('local_family_members', array('id' => $id));
+        $familymember = $DB->get_record('local_family_members',array('id'=>$id));
+        if(!$familymember){return false;}
+        $this->local_family_unsync_parentrole($familymember);
+        return $DB->delete_records('local_family_members', array('id' => $id));   	
+    }
+    
+        /**
+     * Unassign the Moodle family role
+     * @param integer $child_userid
+     * @param integer $parent_userid
+     * @param object $parent_role 
+     * @return bool true
+     */
+    public function local_family_unsync_parentrole($familymember, $parentrole = null){
+    	global $DB;
+    	$ret =false;
+    	if(!$parentrole){
+    		$parentrole  = $DB->get_record('role', array('shortname'=>'parent'));
+    	}
+    	
+    	switch ($familymember->role){
+    		case 'parent':
+    			$children = local_family_fetch_parents_by_family($familymember->familyid);
+    			foreach($children as $child){
+    				$childcontext = context_user::instance($child->userid);
+    				if(user_has_role_assignment($familymember->userid, $parentrole->id, $childcontext->id)){
+    					role_unassign($parentrole->id, $familymember->userid, $childcontext->id);
+    				}
+    			}
+    			break;
+    		case 'child':
+    			 $parents = local_family_fetch_parents_by_family($familymember->familyid);
+    			 $childcontext = context_user::instance($familymember->userid);
+    			 foreach($parents as $parent){
+    			 	if(user_has_role_assignment($parent->userid, $parentrole->id, $childcontext->id)){
+    			 		role_unassign($parentrole->id, $parent->userid, $childcontext->id);
+    			 	}
+    			 }
+    			break;
+    	
+    	}//end of switch
+    
+    }//end of function
+    
+    
+    /**
+     * Assign the Moodle family role
+     * @param integer $child_userid
+     * @param integer $parent_userid
+     * @param object $parent_role 
+     * @return bool true
+     */
+    public function local_family_sync_parentrole($familyid, $parentrole = null){
+    	global $DB;
+    	$ret =false;
+    	if(!$parentrole){
+    		$parentrole  = $DB->get_record('role', array('shortname'=>'parent'));
+    	}
+    	
+    	//fetch family members
+    	$children = local_family_fetch_children_by_family($familyid);
+    	$parents = local_family_fetch_parents_by_family($familyid);
+    	foreach($children as $child){
+    		$childcontext = context_user::instance($child->userid);
+    		foreach($parents as $parent){
+    			if (!user_has_role_assignment($parent->userid, $parentrole->id, $childcontext->id)){
+    				$this->local_family_assign_parentrole($child->userid, $parent->userid,$parentrole,$childcontext);
+    			}//end of if has r assignment
+    		}//end of parents loop
+    	}//end of children loop
+    	
+    }
+    
+    /**
+     * Assign the Moodle family role
+     * @param integer $child_userid
+     * @param integer $parent_userid
+     * @param object $parent_role 
+     * @return bool true
+     */
+    public function local_family_assign_parentrole($child_userid, $parent_userid, $parentrole = null,$childcontext = null){
+    	global $DB;
+    	$ret =false;
+    	if(!$parentrole){
+    		$parentrole  = $DB->get_record('role', array('shortname'=>'parent'));
+    	}
+    	if(!$childcontext){
+    		$childcontext = context_user::instance($child_userid);
+    	}
+    	
+    	if($parentrole && $childcontext){
+    		$ret =role_assign($parentrole->id, $parent_userid, $childcontext->id);
+    	}
+    	if($ret){
+    		return true;
+    	}else{
+    		return false;
+    	}
+    }
+    
+       /**
+     * Assign the Moodle family role
+     * @param integer $child_userid
+     * @param integer $parent_userid
+     * @param object $parent_role 
+     * @return bool true
+     */
+    public function local_family_unassign_parentrole($child_userid, $parent_userid, $parentrole = null){
+    	global $DB;
+    	$ret =false;
+    	if(!$parentrole){
+    		$parentrole  = $DB->get_record('role', array('shortname'=>'parent'));
+    	}
+    	$childcontext = context_user::instance($child_userid);
+    	if($parentrole && $childcontext){
+    		$ret =role_unassign($parentrole->id, $parent_userid, $childcontext->id);
+    	}
+    	if($ret){
+    		return true;
+    	}else{
+    		return false;
+    	}
     }
     
     
