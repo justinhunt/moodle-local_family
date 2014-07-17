@@ -79,9 +79,18 @@ defined('MOODLE_INTERNAL') || die();
      * @param integer $userid
      * @return array array of users (children)
      */
-	function local_family_fetch_children_by_parent($userid) {
+	function local_family_fetch_child_users_by_parent($userid) {
 		global $DB;
+		$familyid = $DB->get_field('local_family_members','familyid',array('userid'=>$userid));
+		if(!$familyid){return false;}
 		
+		$sql = "SELECT *
+			FROM {local_family_members} lfm 
+			INNER JOIN {user} u ON u.id=lfm.userid 
+			WHERE lfm.role='child' 
+			AND lfm.familyid = " . $familyid;
+		$childusers = $DB->get_records_sql($sql);
+		return $childusers;
 	}
 	
 	/**

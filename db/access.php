@@ -44,8 +44,6 @@ defined('MOODLE_INTERNAL') || die();
 					)
 				),
 
-				
-			
 			'local/family:managefamilies' => array(
 				'riskbitmask' => RISK_SPAM | RISK_XSS,
 				'captype' => 'write',

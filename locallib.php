@@ -53,7 +53,7 @@ class local_family_manager {
      * @param integer course module id
      * @return id of family or false if already added
      */
-    public function local_family_add_role($familyid,$userid, $role ) {
+    public function add_role($familyid,$userid, $role ) {
         global $DB,$USER;
 
          $family =  local_family_fetch_family_by_member($userid);
@@ -64,7 +64,7 @@ class local_family_manager {
 			$member->userid= $userid;
 			$member->role= $role;
            if ($DB->insert_record('local_family_members', $member, true)){
-            	$this->local_family_sync_parentrole($familyid);
+            	$this->sync_parentrole($familyid);
             	return true;
             }else{
             	return false;
@@ -74,7 +74,7 @@ class local_family_manager {
        }
     }
     
-    public function local_family_edit_role($memberid, $familyid,$userid, $role ) {
+    public function edit_role($memberid, $familyid,$userid, $role ) {
         global $DB,$USER;
 
             $member = new stdClass();
@@ -101,11 +101,11 @@ class local_family_manager {
          return $DB->delete_records('local_family_members', array('familyid' => $familyid, 'userid'=>$userid));
     }
     */
-    public function local_family_delete_role($id) {
+    public function delete_role($id) {
         global $DB;
         $familymember = $DB->get_record('local_family_members',array('id'=>$id));
         if(!$familymember){return false;}
-        $this->local_family_unsync_parentrole($familymember);
+        $this->unsync_parentrole($familymember);
         return $DB->delete_records('local_family_members', array('id' => $id));   	
     }
     
@@ -116,7 +116,7 @@ class local_family_manager {
      * @param object $parent_role 
      * @return bool true
      */
-    public function local_family_unsync_parentrole($familymember, $parentrole = null){
+    public function unsync_parentrole($familymember, $parentrole = null){
     	global $DB;
     	$ret =false;
     	if(!$parentrole){
@@ -155,7 +155,7 @@ class local_family_manager {
      * @param object $parent_role 
      * @return bool true
      */
-    public function local_family_sync_parentrole($familyid, $parentrole = null){
+    public function sync_parentrole($familyid, $parentrole = null){
     	global $DB;
     	$ret =false;
     	if(!$parentrole){
@@ -169,7 +169,7 @@ class local_family_manager {
     		$childcontext = context_user::instance($child->userid);
     		foreach($parents as $parent){
     			if (!user_has_role_assignment($parent->userid, $parentrole->id, $childcontext->id)){
-    				$this->local_family_assign_parentrole($child->userid, $parent->userid,$parentrole,$childcontext);
+    				$this->assign_parentrole($child->userid, $parent->userid,$parentrole,$childcontext);
     			}//end of if has r assignment
     		}//end of parents loop
     	}//end of children loop
@@ -183,7 +183,7 @@ class local_family_manager {
      * @param object $parent_role 
      * @return bool true
      */
-    public function local_family_assign_parentrole($child_userid, $parent_userid, $parentrole = null,$childcontext = null){
+    public function assign_parentrole($child_userid, $parent_userid, $parentrole = null,$childcontext = null){
     	global $DB;
     	$ret =false;
     	if(!$parentrole){
@@ -210,7 +210,7 @@ class local_family_manager {
      * @param object $parent_role 
      * @return bool true
      */
-    public function local_family_unassign_parentrole($child_userid, $parent_userid, $parentrole = null){
+    public function unassign_parentrole($child_userid, $parent_userid, $parentrole = null){
     	global $DB;
     	$ret =false;
     	if(!$parentrole){
@@ -234,7 +234,7 @@ class local_family_manager {
      * @param integer course module id
      * @return id of family or false if already added
      */
-    public function local_family_add_family($familykey, $familynotes) {
+    public function add_family($familykey, $familynotes) {
         global $DB,$USER;
 
        		$family = local_family_fetch_family_by_key($familykey);
@@ -249,7 +249,7 @@ class local_family_manager {
 
     }
 	
-	public function local_family_edit_family($familyid,$familykey, $familynotes) {
+	public function edit_family($familyid,$familykey, $familynotes) {
         global $DB,$USER;
 		
 			$family = local_family_fetch_family_by_key($familykey);
@@ -274,7 +274,7 @@ class local_family_manager {
      * @param integer $familyid
      * @return array of course
      */ 
-   public function local_family_fetch_families($conditions){
+   public function fetch_families($conditions){
    		global $DB, $OUTPUT;
 		$where ="";
 		if($conditions && count($conditions > 0)){
@@ -300,7 +300,7 @@ class local_family_manager {
    		$families = $DB->get_records_sql_menu($sql);
    		$ret = array();
    		foreach($families as $id=>$familykey){
-   			$members = $this->local_family_get_members($id);
+   			$members = $this->get_members($id);
    			$children = array();
    			$parents = array();
    			$upic = array();
@@ -332,7 +332,7 @@ class local_family_manager {
      * @param integer $familyid
      * @return array of course
      */
-    public function local_family_get_family($familyid) {
+    public function get_family($familyid) {
         global $DB;
         return $DB->get_record('local_family',
                 array('id' => $familyid));
@@ -343,7 +343,7 @@ class local_family_manager {
      * @param integer $familyid
      * @return array of course
      */
-    public function local_family_get_member($memberid) {
+    public function get_member($memberid) {
         global $DB;
         return $DB->get_record('local_family_members',
                 array('id' => $memberid));
@@ -354,7 +354,7 @@ class local_family_manager {
      * @param integer $familyid
      * @return array of course
      */
-    public function local_family_get_members($familyid) {
+    public function get_members($familyid) {
         global $DB;
         $sql = 'SELECT *
 			FROM {local_family_members} lfm 
@@ -370,7 +370,7 @@ class local_family_manager {
      * @param integer $familyid
      * @return bool true
      */
-    public function local_family_delete_family($familyid) {
+    public function delete_family($familyid) {
         global $DB;
         $DB->delete_records('local_family_members', array('familyid' => $familyid));
         return $DB->delete_records('local_family',
@@ -382,7 +382,7 @@ class local_family_manager {
      * @param integer $familyid
      * @return array all the groups
      */
-	function local_family_get_grouplist(){
+	function get_grouplist(){
 		$groups = groups_get_all_groups($this->courseid);
 		return $groups;
 	}
