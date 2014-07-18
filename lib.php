@@ -24,10 +24,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-
-
 	/**
-     * Fetch family by member's user id
+     * Fetch family by member's user id *used internally*
      * @param integer $userid
      * @return object family
      */
@@ -41,7 +39,7 @@ defined('MOODLE_INTERNAL') || die();
 	}
 
 	/**
-     * Fetch family by member's user id
+     * Fetch family by member's user id *used internally*
      * @param integer $userid
      * @return object family
      */
@@ -60,11 +58,10 @@ defined('MOODLE_INTERNAL') || die();
 		}else{
 			return false;
 		}
-		//core_collator::asort_objects_by_property($familys,'role',core_collator::SORT_STRING);
 	}
 
 	/**
-     * Fetch children by familyid
+     * Fetch children by familyid *used internally*
      * @param integer $familyid
      * @return array array of users (children)
      */
@@ -75,36 +72,7 @@ defined('MOODLE_INTERNAL') || die();
 	}
 	
 	/**
-     * Fetch children by parent user id
-     * @param integer $userid
-     * @return array array of users (children)
-     */
-	function local_family_fetch_child_users_by_parent($userid) {
-		global $DB;
-		$familyid = $DB->get_field('local_family_members','familyid',array('userid'=>$userid));
-		if(!$familyid){return false;}
-		
-		$sql = "SELECT *
-			FROM {local_family_members} lfm 
-			INNER JOIN {user} u ON u.id=lfm.userid 
-			WHERE lfm.role='child' 
-			AND lfm.familyid = " . $familyid;
-		$childusers = $DB->get_records_sql($sql);
-		return $childusers;
-	}
-	
-	/**
-     * Fetch parent by children's user id
-     * @param integer $userid
-     * @return array array of users (parents)
-     */
-	function local_family_fetch_parents_by_child($userid) {
-		global $DB;
-		
-	}
-	
-	/**
-     * Fetch parent by family id
+     * Fetch parent by family id *used internally*
      * @param integer $familyid
      * @return array array of users (parents)
      */
@@ -114,7 +82,7 @@ defined('MOODLE_INTERNAL') || die();
 	}
 	
 	/**
-     * Fetch parent by family id
+     * Fetch parent by family id *used internally*
      * @param integer $familyid
      * @return array array of users (family members)
      */
@@ -123,7 +91,217 @@ defined('MOODLE_INTERNAL') || die();
 		return $DB->get_records('local_family_members',array('familyid'=>$familyid));
 	}
 	
-	  
+	
+	/**
+     *  Fetch child as USER by family members user id  *not used internally*
+     * @param integer $userid
+     * @return array array of user objects (children)
+     */
+	function local_family_fetch_child_users($userid) {
+		global $DB;
+		$familyid = $DB->get_field('local_family_members','familyid',array('userid'=>$userid));
+		if(!$familyid){return false;}
+		
+			
+		$sql = "SELECT *
+			FROM {user} u 
+			WHERE u.id in (SELECT lfm.userid FROM {local_family_members} lfm 
+			WHERE lfm.role='child' AND lfm.familyid = " . $familyid . ')';
+	
+			
+		$childusers = $DB->get_records_sql($sql);
+		return $childusers;
+	}
+	
+	/**
+     * Fetch parent as USER by family members user id *not used internally*
+     * @param integer $userid
+     * @return array array of users (parents)
+     */
+	function local_family_fetch_parent_users($userid) {
+		global $DB;
+		$familyid = $DB->get_field('local_family_members','familyid',array('userid'=>$userid));
+		if(!$familyid){return false;}
+		
+			
+		$sql = "SELECT *
+			FROM {user} u 
+			WHERE u.id in (SELECT lfm.userid FROM {local_family_members} lfm 
+			WHERE lfm.role='parent' AND lfm.familyid = " . $familyid . ')';
+	
+			
+		$parentusers = $DB->get_records_sql($sql);
+		return $parentusers;
+	}
+	
+	/**
+     * Fetch url to use to log in as student. *not used internally*
+     * loginas.php should make it impossble to login if not a parent of the child
+     * @param integer $userid
+     * @return moodleurl url to use for parent to loginas chile
+     */
+	function local_family_fetch_loginas_url($userid, $courseid) {
+		global $CFG,$USER;
+		$urlbase = '/local/family/loginas.php';
+		return new moodle_url($urlbase, array('userid'=>$userid,'courseid'=>$courseid, 'action' => 'loginas'));
+	}
+	
+	/**
+     * Fetch url to use to get an outline report *not used internally*
+     * default outline report is "outline", could also pass "complete"
+     * @param integer $userid
+     * @param integer $courseid
+     * @param string $mode either "outline" or "complete"
+     * @return moodleurl url of the user/course report
+     */
+	function local_family_fetch_outlinereport_url($userid, $courseid, $mode='outline') {
+		global $CFG,$USER;
+		$urlbase = '/report/outline/user.php';
+		return new moodle_url($urlbase, array('id'=>$userid,'course'=>$courseid, 'mode' => $mode));
+	}
+	
+	/**
+     * Fetch url to use to get students grade report *not used internally*
+     * @param integer $userid
+     * @param integer $courseid
+     * @param string $mode either "outline" or "complete"
+     * @return moodleurl url of the user's grade report for this course
+     */
+	function local_family_fetch_gradereport_url($userid, $courseid) {
+		global $CFG,$USER;
+		$urlbase = '/course/user.php';
+		return new moodle_url($urlbase, array('user'=>$userid,'id'=>$courseid, 'mode' => 'grade'));
+	}
+	
+	/**
+     * Is this a child *not used internally*
+     * @param integer $userid
+     * @return boolean  true =this is a child, false = not chile
+     */
+	function local_family_is_child($userid) {
+		global $DB;
+		$role = $DB->get_field('local_family_members','role',array('userid'=>$userid));
+		if(!$role){return false;}
+
+		return $role == 'child';
+	}
+	
+	/**
+     * Is this a parent *not used internally*
+     * @param integer $userid
+     * @return boolean  true =this is a parent, false = not parent
+     */
+	function local_family_is_parent($userid) {
+		global $DB;
+		$role = $DB->get_field('local_family_members','role',array('userid'=>$userid));
+		if(!$role){return false;}
+		return $role == 'parent';
+	}
+		
+	
+/**
+ * Returns list of courses passedin user is enrolled in and can access
+ *
+ *
+ * @param string $userid
+ * @param int $limit max number of courses
+ * @return array
+ */
+function local_family_fetch_user_courses($userid, $limit=1) {
+		global $DB;
+
+	$sort = 'visible DESC,sortorder ASC';
+	$user = $DB->get_record('user', array('id'=>$userid));
+
+    // Guest account does not have any courses
+    if (isguestuser() or !isloggedin()) {
+        return(array());
+    }
+
+    $basefields = array('id', 'category', 'sortorder',
+                        'shortname', 'fullname', 'idnumber',
+                        'startdate', 'visible',
+                        'groupmode', 'groupmodeforce', 'cacherev');
+
+   
+    $fields = $basefields;
+    if (in_array('*', $fields)) {
+        $fields = array('*');
+    }
+
+    $orderby = "";
+    $sort    = trim($sort);
+    if (!empty($sort)) {
+        $rawsorts = explode(',', $sort);
+        $sorts = array();
+        foreach ($rawsorts as $rawsort) {
+            $rawsort = trim($rawsort);
+            if (strpos($rawsort, 'c.') === 0) {
+                $rawsort = substr($rawsort, 2);
+            }
+            $sorts[] = trim($rawsort);
+        }
+        $sort = 'c.'.implode(',c.', $sorts);
+        $orderby = "ORDER BY $sort";
+    }
+
+    $wheres = array("c.id <> :siteid");
+    $params = array('siteid'=>SITEID);
+
+    if (isset($user->loginascontext) and $user->loginascontext->contextlevel == CONTEXT_COURSE) {
+        // list _only_ this course - anything else is asking for trouble...
+        $wheres[] = "courseid = :loginas";
+        $params['loginas'] = $user->loginascontext->instanceid;
+    }
+
+    $coursefields = 'c.' .join(',c.', $fields);
+    $ccselect = ', ' . context_helper::get_preload_record_columns_sql('ctx');
+    $ccjoin = "LEFT JOIN {context} ctx ON (ctx.instanceid = c.id AND ctx.contextlevel = :contextlevel)";
+    $params['contextlevel'] = CONTEXT_COURSE;
+    $wheres = implode(" AND ", $wheres);
+
+    //note: we can not use DISTINCT + text fields due to Oracle and MS limitations, that is why we have the subselect there
+    $sql = "SELECT $coursefields $ccselect
+              FROM {course} c
+              JOIN (SELECT DISTINCT e.courseid
+                      FROM {enrol} e
+                      JOIN {user_enrolments} ue ON (ue.enrolid = e.id AND ue.userid = :userid)
+                     WHERE ue.status = :active AND e.status = :enabled AND ue.timestart < :now1 AND (ue.timeend = 0 OR ue.timeend > :now2)
+                   ) en ON (en.courseid = c.id)
+           $ccjoin
+             WHERE $wheres
+          $orderby";
+    $params['userid']  = $user->id;
+    $params['active']  = ENROL_USER_ACTIVE;
+    $params['enabled'] = ENROL_INSTANCE_ENABLED;
+    $params['now1']    = round(time(), -2); // improves db caching
+    $params['now2']    = $params['now1'];
+
+    $courses = $DB->get_records_sql($sql, $params, 0, $limit);
+
+    // preload contexts and check visibility
+    foreach ($courses as $id=>$course) {
+        context_helper::preload_from_record($course);
+        if (!$course->visible) {
+            if (!$context = context_course::instance($id, IGNORE_MISSING)) {
+                unset($courses[$id]);
+                continue;
+            }
+            if (!has_capability('moodle/course:viewhiddencourses', $context)) {
+                unset($courses[$id]);
+                continue;
+            }
+        }
+        $courses[$id] = $course;
+    }
+
+
+	//return the courses
+    return $courses;
+
+
+  }//end of function
+ 
 	
 
 	

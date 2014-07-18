@@ -88,6 +88,9 @@ class local_family_renderer extends plugin_renderer_base {
 		
 			$actionurl = '/local/family/view.php';
 			$messageurl = new moodle_url($actionurl, array());
+			
+			$messageurl = local_family_fetch_loginas_url($member->userid,2);
+			
 			$messagelink = html_writer::link($messageurl, get_string('messagelink', 'local_family'));
 			$messagecell = new html_table_cell($messagelink);
 		
@@ -128,7 +131,7 @@ class local_family_renderer extends plugin_renderer_base {
 	 */
 	function get_families_table($familydatas){
 
-		global  $DB;
+		global $CFG, $DB;
 	
 		$table = new html_table();
 		$table->id = 'local_family_familylist_panel';
@@ -198,7 +201,21 @@ class local_family_renderer extends plugin_renderer_base {
 
 	}
 	
+	function show_loginas_error($message=""){
+
+		echo $this->output->heading(get_string('loginaserror', 'local_family'), 3, 'main');
+
+		//if we have a status message, display it.
+		if($message){
+			echo $this->output->heading($message,5,'main');
+		}
 	
+		
+	
+		echo $this->output->footer();
+
+
+	}
 
 	function show_single_family($familyid,$familykey, $children, $parents, $message=""){
 

@@ -42,7 +42,7 @@ $familyid =  optional_param('familyid',0, PARAM_INT); //the id of the group
 $memberid =  optional_param('memberid',0, PARAM_INT); //the id of the group
 $userid =  optional_param('userid',0, PARAM_INT); //the id of the group
 $role =  optional_param('role','', PARAM_TEXT); //the actual role name
-
+$courseid =  optional_param('courseid',0, PARAM_INT); //the courseid
 
 
 $context = context_system::instance();
@@ -82,6 +82,7 @@ if($familyid){
 
 
 switch($action){
+
 	
 	case 'addrole':
 		$addform = new local_family_add_role_form();
@@ -296,11 +297,9 @@ switch($action){
 
 }
 
-	
 
 //The default action is to list all the families and any messages that get here.
 local_family_show_all_families($renderer,$message);
-
 
 	/**
 	 * Show an error, and return to top of family list page

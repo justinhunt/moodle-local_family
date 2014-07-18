@@ -95,12 +95,6 @@ class local_family_manager {
      * @param integer $familyid
      * @return bool true
      */
-     /*
-    public function local_family_delete_role($familyid, $userid) {
-        global $DB;
-         return $DB->delete_records('local_family_members', array('familyid' => $familyid, 'userid'=>$userid));
-    }
-    */
     public function delete_role($id) {
         global $DB;
         $familymember = $DB->get_record('local_family_members',array('id'=>$id));

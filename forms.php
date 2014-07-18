@@ -31,6 +31,38 @@
 require_once($CFG->libdir . '/formslib.php');
 require_once($CFG->dirroot . '/user/selector/lib.php');
 
+class local_family_loginas_form extends moodleform {
+	
+	protected $action = 'loginas';
+	
+    public function definition() {
+        global $CFG, $USER, $OUTPUT;
+        $strrequired = get_string('required');
+        $mform = & $this->_form;
+        
+        $childname = $this->_customdata['childname'];
+		
+		$mform->addElement('hidden', 'childid');
+        $mform->setType('childid', PARAM_INT);
+        
+		$mform->addElement('hidden', 'courseid');
+        $mform->setType('courseid', PARAM_INT);
+		
+		$mform->addElement('hidden', 'redirect');
+        $mform->setType('redirect', PARAM_INT);
+		
+		
+		
+		$mform->addElement('hidden', 'action', 'do' . $this->action);
+        $mform->setType('action', PARAM_TEXT);
+        
+        $mform->addElement('static','loginaswarning' ,'', get_string('loginaswarning', 'local_family'));
+		
+		 $this->add_action_buttons(true,get_string('label_' . $this->action, 'local_family', $childname));
+
+    }
+}
+
 class local_family_add_role_form extends moodleform {
 	
 	protected $action = 'addrole';
@@ -40,12 +72,6 @@ class local_family_add_role_form extends moodleform {
         $strrequired = get_string('required');
         $mform = & $this->_form;
 
-	//	$familyid = $this->_customdata['familyid'];
-	//	$role = $this->_customdata['role'];
-
-        //add the course id (of the context)
-       // $mform->addElement('text', 'userid', get_string('username','local_family'));
-       // $mform->setType('userid', PARAM_INT);
        
        //if admin, display a selectors so we can update contributor, site and sitecourseid
 		$selector = new local_family_user_selector('userid', array());
