@@ -230,6 +230,68 @@ class local_family_search_family_form extends moodleform {
     }
 }
 
+/**
+ * Form to be displayed in family mod
+ *
+ * Just displays a filepicker field.
+ *
+ */
+class local_family_upload_file_form extends moodleform {
+
+	protected $action = 'uploadfile';
+
+    /**
+     * Defines the form.  Just adds a filepicker and submit button
+     */
+    public function definition() {
+        $mform = $this->_form;
+        $mform->addElement('filepicker',
+                           'uploadfile',
+                           get_string('uploadfile', 'local_family'),
+                           null,
+                           array('accepted_types' => 'csv,txt'));
+        $mform->addRule('uploadfile',
+                        get_string('musthavefile', 'local_family'),
+                        'required',
+                        '',
+                        'client');
+		
+		$yesnooptions = array(0=>'No',1=>'Yes');
+		$mform->addElement('select', 'preview', get_string('previewonly','local_family'),$yesnooptions);
+        $mform->setType('preview', PARAM_INT);
+		$mform->setDefault('preview', 1);
+		
+		$mform->addElement('select', 'stoponerror', get_string('stoponerror','local_family'),$yesnooptions);
+        $mform->setType('stoponerror', PARAM_INT);
+		 $mform->setDefault('stoponerror', 0);
+		
+		$mform->addElement('hidden', 'action', 'do' . $this->action);
+        $mform->setType('action', PARAM_TEXT);
+		
+        $mform->addElement('submit', 'local_family_submit', get_string('upload'));
+    }
+
+    /**
+     * Generate the HTML for the form, capture it in an output buffer, then return it
+     *
+     * @return string
+     */
+	 /*
+    public function display() {
+        // Finalize the form definition if not yet done.
+        if (!$this->_definition_finalized) {
+            $this->_definition_finalized = true;
+            $this->definition_after_data();
+        }
+        ob_start();
+        $this->_form->display();
+        $form = ob_get_clean();
+        return $form;
+    }
+	*/
+}
+
+
 /*
  * This class displays either all the Moodle users allowed to use a service,
  * either all the other Moodle users.

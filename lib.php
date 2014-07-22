@@ -60,6 +60,31 @@ defined('MOODLE_INTERNAL') || die();
 		}
 	}
 
+	
+	/**
+     * Fetch family by member's user id *used internally*
+     * @param integer $userid
+     * @return object family
+     */
+	function local_family_fetch_family_by_username($username) {
+		 global $DB;
+		 $sql = "SELECT * from {local_family} f " . 
+		 "INNER JOIN {local_family_members} fm " .
+		 "ON f.id = fm.familyid " . 
+		 "INNER JOIN {user} u " .
+		  "ON fm.userid = u.id " . 
+		 "WHERE u.username = '" . $username ."'";
+		
+		$result = $DB->get_records_sql($sql);
+		if($result && count($result) > 0){
+			//a member can only be in ONE family
+			//this should never be an error
+			return array_shift($result);
+		}else{
+			return false;
+		}
+	}
+	
 	/**
      * Fetch children by familyid *used internally*
      * @param integer $familyid
@@ -111,6 +136,26 @@ defined('MOODLE_INTERNAL') || die();
 			
 		$childusers = $DB->get_records_sql($sql);
 		return $childusers;
+	}
+	
+	/**
+     *  Fetch USER/family members by family id  *used internally*
+     * @param integer $userid
+     * @return array array of user objects (children)
+     */
+	function local_family_fetch_users_by_family($familyid) {
+		global $DB;
+
+		if(!$familyid){return false;}			
+		$sql = "SELECT *
+			FROM {user} u 
+			INNER JOIN {local_family_members} lfm 
+			ON lfm.userid=u.id
+			WHERE lfm.familyid = " . $familyid . " " .
+			"ORDER BY lfm.role DESC";
+
+		$users = $DB->get_records_sql($sql);
+		return $users;
 	}
 	
 	/**

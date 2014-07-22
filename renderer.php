@@ -52,6 +52,44 @@ class local_family_renderer extends plugin_renderer_base {
 		$addurl = new moodle_url('/local/family/view.php', array('action'=>'addfamily'));
 		echo $this->output->single_button($addurl,get_string('addfamily','local_family'));
 	}
+	
+	/**
+	 * Show the "add" button on the family list page
+	 *
+	 */
+	function show_upload_results($ret){
+
+		echo $this->output->heading(get_string('uploadfileresults', 'local_family'), 3, 'main');
+		$errorcount = count($ret->errors);
+		echo  get_string('errorcount', 'local_family')  . $errorcount . '<br />';
+		echo  get_string('familiescreated', 'local_family')  . $ret->createdfamilies . '<br />';
+		echo  get_string('membersadded', 'local_family')  . $ret->addedusers . '<br />';
+		echo  get_string('membersremoved', 'local_family')  . $ret->removedusers . '<br />';
+		foreach ($ret->errors as $error){
+			echo $error . '<br />';
+		}
+		echo $this->output->footer();
+		return;
+	}
+
+		/**
+	 * Show the "add" button on the family list page
+	 *
+	 */
+	function show_preview_upload_results($ret){
+
+		echo $this->output->heading(get_string('previewuploadfileresults', 'local_family'), 3, 'main');
+		$errorcount = count($ret->errors);
+		echo  get_string('previewerrorcount', 'local_family')  . $errorcount . '<br />';
+		echo  get_string('previewfamiliescreated', 'local_family')  . $ret->createdfamilies . '<br />';
+		echo  get_string('previewmembersadded', 'local_family')  . $ret->addedusers . '<br />';
+		echo  get_string('previewmembersremoved', 'local_family')  . $ret->removedusers . '<br />';
+		foreach ($ret->errors as $error){
+			echo $error . '<br />';
+		}
+		echo $this->output->footer();
+		return;
+	}
 
 	/**
 	 * Return the html table of members of a family

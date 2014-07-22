@@ -36,4 +36,12 @@ $ADMIN->add('local_family', new admin_externalpage('searchfamilies', get_string(
 $ADMIN->add('local_family', new admin_externalpage('addfamily', get_string('addfamily', 'local_family'),
         $CFG->wwwroot."/local/family/view.php?action=addfamily",
         'moodle/site:config'));
+		
+$ADMIN->add('local_family', new admin_externalpage('uploadfamilies', get_string('uploadfamilies', 'local_family'),
+        $CFG->wwwroot."/local/family/view.php?action=uploadfile",
+        'moodle/site:config'));
+		
+$ADMIN->add('local_family', new admin_externalpage('exportfamilies', get_string('exportfamilies', 'local_family'),
+        $CFG->wwwroot."/local/family/exportfamilies.php",
+        'moodle/site:config'));
 

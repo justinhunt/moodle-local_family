@@ -25,12 +25,24 @@
  *
  */
  
+ 
+		const LF_UNKNOWN = -1;
+		const LF_STARTFINISH = 0;
+		const LF_ADD = 1;
+		const LF_REMOVE = 2;
+		const LF_COMMENT = 3;
+		const LF_FAMILYKEY = 4;
+		const LF_SEARCHFAMILYKEY = 5;
+ 
+ 
 require_once($CFG->dirroot . '/local/family/lib.php');
 
 class local_family_manager {
 
 	private $courseid=0;
 	private $course=null;
+	private $starttime=0;
+	private $newkeycount=0;
 	
 	/**
      * constructor. make sure we have the right course
@@ -44,6 +56,7 @@ class local_family_manager {
 			$this->courseid = $COURSE->id; 
 			$this->course = $COURSE;
 		}
+		$this->starttime=time();
     }
 
 
@@ -263,6 +276,13 @@ class local_family_manager {
         }
     }
    
+   
+   public function get_new_familykey($user){
+		$this->newkeycount++;
+		$newkey = $user->lastname . '_' . $this->starttime . '_' . $this->newkeycount;
+		return $newkey;
+   }
+   
    /**
      * Return array of families data, suitable for list
      * @param integer $familyid
@@ -380,7 +400,274 @@ class local_family_manager {
 		$groups = groups_get_all_groups($this->courseid);
 		return $groups;
 	}
+}
+
+
+/**
+ * Defines upload file classes for use in the local_family block
+ *
+ * @package    local_family
+ * @author     Justin Hunt <poodllsupport@gmail.com>
+ * @copyright   2014 poodll.com
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+/**
+ * Validates and processes files for the tutorlink block
+ */
+class local_family_upload_handler {
+
+
+    /**
+     * The ID of the file uploaded through the form
+     *
+     * @var string
+     */
+    private $filename;
+
+    /**
+     * local_family configuration
+     *
+     * @var object
+     */
+    private $cfg;
+
+    /**
+     * Constructor, sets the filename
+     *
+     * @param string $filename
+     */
+    public function __construct($filename) {
+        $this->filename = $filename;
+        $this->cfg = get_config('local_family');
+    }
+
+    /**
+     * Attempts to open the file
+     *
+     *  open file using the File API.
+     * Return the file handler.
+     *
+     * @throws local_family_exception if the file can't be opened for reading
+     * @global object $USER
+     * @return object File handler
+     */
+    public function open_file() {
+        global $USER;
+    
+		$fs = get_file_storage();
+		$context = context_user::instance($USER->id);
+		$files = $fs->get_area_files($context->id,
+									 'user',
+									 'draft',
+									 $this->filename,
+									 'id DESC',
+									 false);
+		if (!$files) {
+			throw new local_family_exception('cantreadcsv', '', 500);
+		}
+		$file = reset($files);
+		if (!$file = $file->get_content_file_handle()) {
+			throw new local_family_exception('cantreadcsv', '', 500);
+		}
+
+        return $file;
+    }
+
+    /**
+     * Checks that the file is valid CSV in the expected format
+     *
+     * Opens the file, then checks each row contains 3 comma-separated values
+     *
+     * @see open_file()
+     * @throws local_family_exeption if there are the wrong number of columns
+     * @return true on success
+     */
+    public function doprocess($preview=true,$stoponerror=true) {
+		global $DB;
 	
+		$bfm = new local_family_manager();
+        $line = 0;
+		$ret= new stdClass();
+		$ret->createdfamilies = 0;
+		$ret->addedusers=0;
+		$ret->removedusers=0;
+		$ret->errors= array();
+        $file = $this->open_file();
+	
+		
+        while ($therow = fgets($file)) {
+            $line++;
+			if(!$therow || trim($therow) ==''){continue;}
+			
+			//determine what kind of line we are dealing with
+			$linetype= LF_UNKNOWN ;
+			if(strpos($therow,'=====')!==false){
+				$linetype = LF_STARTFINISH;
+			}elseif(strpos($therow,'+')===0){
+				$linetype = LF_ADD;
+			}elseif(strpos($therow,'-')===0){
+				$linetype = LF_REMOVE;
+			}elseif(strpos($therow,'//')===0){
+				$linetype = LF_COMMENT;
+			}elseif(strpos($therow,'FAMILYKEY=')===0){
+				$linetype = LF_FAMILYKEY;
+			}elseif(strpos($therow,'FAMILYMEMBER=')===0){
+				$linetype = LF_SEARCHFAMILYKEY;
+			}
+			
+			//dependning on the linetype, check for the simple errors
+			switch($linetype){
+				case LF_UNKNOWN:
+					$ret->errors[] = get_string('strangerow','local_family', $line);
+					break;
+				case LF_ADD:
+				case LF_REMOVE:
+					$csvrow = explode(',',$therow);
+					if(count($csvrow) < 3) {
+						$ret->errors[] = get_string('toofewcols','local_family', $line);
+						if($stoponerror) { return $ret;}else{continue;}
+					}
+					if(count($csvrow) > 3) {
+						$ret->errors[] = get_string('toomanycols','local_family', $line);
+						if($stoponerror) { return $ret;}else{continue;}
+					}
+					if(trim($csvrow[1])!='child' && trim($csvrow[1])!='parent'){
+						$ret->errors[] = get_string('strangerelationship','local_family', $line);
+						if($stoponerror) { return $ret;}else{continue;}
+					}
 
+			}
+			
+			//process a family key line
+			if($linetype==LF_FAMILYKEY){
+				$familykey=str_replace('FAMILYKEY=','',trim($therow));
+				$family = local_family_fetch_family_by_key($familykey);
+				if($family){
+					$currentfamily=$family;
+					continue;
+				}else{
+					$ret->errors[] = get_string('nosuchfamily','local_family', $line);
+					if($stoponerror) { return $ret;}else{continue;}
+				}
+			}
+			
+			//Process a search famly key line
+			if($linetype==LF_SEARCHFAMILYKEY){
+				$familymember=str_replace('FAMILYMEMBER=','',trim($therow));
+				$family =  local_family_fetch_family_by_username($familymember);
+				if($family){
+					$currentfamily=$family;
+					continue;
+				}else{
+					$ret->errors[] = get_string('nosuchfamily','local_family', $line);
+					if($stoponerror) { return $ret;}else{continue;}
+				}	
+			}
+			
+			//process a new family line
+			if($linetype==LF_STARTFINISH){
+				$currentfamily=false;
+				continue;
+			}
+			
+			//process an add remove line
+			if($linetype==LF_ADD || $linetype==LF_REMOVE ){
 
+				$user = $DB->get_record('user',array('username'=>trim($csvrow[2])));
+				if(!$user){
+					$ret->errors[] = get_string('nosuchuser','local_family', $line);
+					if($stoponerror) { return $ret;}else{continue;}
+				}
+				$family = local_family_fetch_family_by_member($user->id);
+				$member = $DB->get_record('local_family_members',array('userid'=>$user->id));
+				switch($linetype){
+				
+					case LF_ADD:
+						if($family && $family->id != $currentfamily->id){
+							$ret->errors[] = get_string('alreadyindifferentfamily','local_family', $line);
+							if($stoponerror) { return $ret;}else{continue;}
+						}else{
+							if(!$preview){
+							   if(!$currentfamily){
+									$familykey = $bfm->get_new_familykey($user);
+									$familynotes ="";
+									$familyid =  $bfm->add_family($familykey, $familynotes);
+									$currentfamily = local_family_fetch_family_by_key($familykey);
+									$ret->createdfamilies++;
+							   }else{
+									$familyid=$currentfamily->id;
+							   }
+							  
+							  if( $bfm->add_role($familyid,$user->id,trim($csvrow[1]))){
+								$ret->addedusers++;
+								continue;
+							  }else{
+								$ret->errors[] = get_string('unabletoassignrole','local_family', $line);
+								if($stoponerror) { return $ret;}else{continue;}
+							 }
+							}else{
+								 if(!$currentfamily){
+									$ret->createdfamilies++;
+								 }
+								$ret->addedusers++;
+							}
+						}
+						break;
+					case LF_REMOVE:
+						if(!$family){
+							$ret->errors[] = get_string('notinfamily','local_family', $line);
+							if($stoponerror) { return $ret;}else{continue;}
+						}elseif($family->familykey != $currentfamily->familykey){
+							$ret->errors[] = get_string('wrongfamily','local_family', $line);
+							if($stoponerror) { return $ret;}else{continue;}
+						}else{
+							if(!$preview){
+								if($bfm->delete_role($member->id)){	
+									$ret->removedusers++;
+									continue;
+								}else{
+									$ret->errors[] = get_string('unabletoremovemember','local_family', $line);
+									if($stoponerror) { return $ret;}else{continue;}
+								}
+							}else{
+								$ret->removedusers++;
+							}
+						}
+				}//end of switch
+			}//end of if linetype
+        }//end of while
+        fclose($file);
+        return $ret;
+    }//end of do process function
+}//end of class
+
+    
+/**
+ * An exception for reporting errors when processing local_family files
+ *
+ * Extends the moodle_exception with an http property, to store an HTTP error
+ * code for responding to AJAX requests.
+ */
+class local_family_exception extends moodle_exception {
+
+    /**
+     * Stores an HTTP error code
+     *
+     * @var int
+     */
+    public $http;
+
+    /**
+     * Constructor, creates the exeption from a string identifier, string
+     * parameter and HTTP error code.
+     *
+     * @param string $errorcode
+     * @param string $a
+     * @param int $http
+     */
+    public function __construct($errorcode, $a, $http) {
+        parent::__construct($errorcode, 'local_family', '', $a);
+        $this->http = $http;
+    }
 }

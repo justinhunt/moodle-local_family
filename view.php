@@ -83,7 +83,6 @@ if($familyid){
 
 switch($action){
 
-	
 	case 'addrole':
 		$addform = new local_family_add_role_form();
 		$data=new stdClass;
@@ -92,7 +91,24 @@ switch($action){
 		$addform->set_data($data);
 		$renderer->show_form($addform,get_string('addroleheading', 'local_family',$familykey));
 		return;
-	
+		
+	case 'uploadfile':
+		$uploadfileform = new local_family_upload_file_form();
+		$renderer->show_form($uploadfileform,get_string('uploadfileheading', 'local_family'));
+		return;
+		
+	case 'douploadfile':
+		$uploadfileform = new local_family_upload_file_form();
+		$data = $uploadfileform->get_data();
+		$uploadhandler = new local_family_upload_handler($data->uploadfile);
+		$ret = $uploadhandler->doprocess($data->preview,$data->stoponerror);
+		if($data->preview){
+			$renderer->show_preview_upload_results($ret);
+		}else{
+			$renderer->show_upload_results($ret);
+		}
+		return;
+
 	case 'deleterole':
 
 		if(!$familyid || !$userid){
