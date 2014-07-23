@@ -28,7 +28,7 @@ $observers = array(
  
     array(
         'eventname'   => '\core\event\user_deleted',
-		'include'	  => 'local/family/lib.php',
+		'include'	  => '/local/family/lib.php',
         'callback'    => 'local_family_handle_user_deletion',
     )
 );

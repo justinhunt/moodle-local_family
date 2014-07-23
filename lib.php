@@ -358,5 +358,5 @@ function local_family_fetch_user_courses($userid, $limit=1) {
 	 */
 	function local_family_handle_user_deletion(\core\event\user_deleted $event) {
 		global $DB;
-		$DB->delete_records('local_family_members', array('userid' => $event->userid));
+		$DB->delete_records('local_family_members', array('userid' => $event->relateduserid));
 	}
