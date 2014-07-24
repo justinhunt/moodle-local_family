@@ -480,10 +480,10 @@ class local_family_upload_handler {
      * Opens the file, then checks each row contains 3 comma-separated values
      *
      * @see open_file()
-     * @throws local_family_exeption if there are the wrong number of columns
-     * @return true on success
+     * @throws local_family_exception if there are the wrong number of columns
+     * @return Object a set of data with no. of new familes, no. of members added or removed, and error details
      */
-    public function doprocess($preview=true,$stoponerror=true) {
+    public function doprocess_exportformat($preview=true,$stoponerror=true) {
 		global $DB;
 	
 		$bfm = new local_family_manager();
@@ -516,7 +516,7 @@ class local_family_upload_handler {
 				$linetype = LF_SEARCHFAMILYKEY;
 			}
 			
-			//dependning on the linetype, check for the simple errors
+			//depending on the linetype, check for the simple errors
 			switch($linetype){
 				case LF_UNKNOWN:
 					$ret->errors[] = get_string('strangerow','local_family', $line);
@@ -640,6 +640,156 @@ class local_family_upload_handler {
         fclose($file);
         return $ret;
     }//end of do process function
+	
+	
+	/**
+     * Checks that the file is valid CSV in the expected format
+     *
+     * Opens the file, then checks each row contains 3 comma-separated values
+     *
+     * @see open_file()
+     * @throws local_family_exception if there are the wrong number of columns
+     * @return Object a set of data with no. of new familes, no. of members added or removed, and error details
+     */
+    public function doprocess_moodleformat($preview=true,$stoponerror=true) {
+		global $DB;
+	
+		$bfm = new local_family_manager();
+        $line = 0;
+		$ret= new stdClass();
+		$ret->createdfamilies = 0;
+		$ret->addedusers=0;
+		$ret->removedusers=0;
+		$ret->errors= array();
+        $file = $this->open_file();
+	
+		$username_i=false;
+		$role_i =false;
+		$parent_i=false;
+		$familykey_i=false;
+		$colcount = false;
+
+        while ($therow = fgets($file)) {
+            //inc our line counter
+			$line++;
+			//init our family variable
+			$currentfamily=false;
+			
+			//if the line is empty, continue
+			if(!$therow || trim($therow) ==''){continue;}
+			
+			//split our row
+			$csvrow = explode(',',trim($therow));
+			
+			//if this is the first row
+			//get the column definitions
+			if(!$colcount){
+			
+				$username_i=array_search('username',$csvrow);
+				$role_i=array_search('familyrole',$csvrow);
+				$parent_i=array_search('familyparent',$csvrow);
+				$familykey_i=array_search('familykey',$csvrow);
+				if($username_i===false){$ret->errors[]= get_string('nocol_username','local_family', $line);}
+				if($role_i===false){$ret->errors[]= get_string('nocol_familyrole','local_family', $line);}
+				if($parent_i===false){$ret->errors[]= get_string('nocol_familyparent','local_family', $line);}
+				if($familykey_i===false){$ret->errors[]= get_string('nocol_familykey','local_family', $line);}
+				
+				//if we have errors, do not proceed any further. It would be pointless
+				if(count($ret->errors)){
+					$ret->errors[]= get_string('import_cancelled','local_family');
+					return $ret;
+				}
+				
+				$colcount = max($username_i,$role_i,$parent_i,$familykey_i)+1;
+				continue;
+			}
+
+			//make sure the current row has the correct no of columns
+			if(count($csvrow) < $colcount) {
+				$ret->errors[] = get_string('toofewcols','local_family', $line);
+				if($stoponerror) { return $ret;}else{continue;}
+			}
+			if(count($csvrow) > $colcount) {
+				$ret->errors[] = get_string('toomanycols','local_family', $line);
+				if($stoponerror) { return $ret;}else{continue;}
+			}
+			if(trim($csvrow[$role_i])!='child' && trim($csvrow[$role_i])!='parent'){
+				$ret->errors[] = get_string('strangerelationship','local_family', $line);
+				if($stoponerror) { return $ret;}else{continue;}
+			}
+			
+			//first make sure our user is valid
+			$user = $DB->get_record('user',array('username'=>trim($csvrow[$username_i])));
+			if(!$user){
+				$ret->errors[] = get_string('nosuchuser','local_family', $line);
+				if($stoponerror) { return $ret;}else{continue;}
+			}
+
+			//process the family key column
+			$familykey=trim($csvrow[$familykey_i]);
+			if($familykey){
+				$currentfamily = local_family_fetch_family_by_key($familykey);
+				if(!$currentfamily){
+					$ret->errors[] = get_string('nosuchfamily','local_family', $line);
+					if($stoponerror) { return $ret;}else{continue;}
+				}
+			}
+			
+			//process the family search column
+			if(!$currentfamily){
+				$searchkey=trim($csvrow[$parent_i]);
+				if($searchkey){
+					$currentfamily =  local_family_fetch_family_by_username($searchkey);
+				}
+			}
+			
+			//if we still did not get a family, we will need to add it.
+			if(!$currentfamily && !$preview){
+				$familykey = $bfm->get_new_familykey($user);
+				$familynotes ="";
+				$currentfamilyid =  $bfm->add_family($familykey, $familynotes);
+				$currentfamily = local_family_fetch_family_by_key($familykey);
+				if(!$currentfamily){
+					$ret->errors[] = get_string('familycreationfailed','local_family', $line);
+					if($stoponerror) { return $ret;}else{continue;}
+				}else{
+					$ret->createdfamilies++;
+				}
+			}elseif($preview){
+				$ret->createdfamilies++;
+			}
+		
+			//Now actually add the member
+			$existingfamily = local_family_fetch_family_by_member($user->id);
+			//$member = $DB->get_record('local_family_members',array('userid'=>$user->id));
+
+			if($existingfamily && $existingfamily->id != $currentfamily->id){
+				$ret->errors[] = get_string('alreadyindifferentfamily','local_family', $line);
+				if($stoponerror) { return $ret;}else{continue;}
+			}else{
+				if(!$preview){
+					  $familyid=$currentfamily->id;				  
+					  if( $bfm->add_role($familyid,$user->id,trim($csvrow[$role_i]))){
+						$ret->addedusers++;
+						continue;
+					  }else{
+						$ret->errors[] = get_string('unabletoassignrole','local_family', $line);
+						if($stoponerror) { return $ret;}else{continue;}
+					 }
+				}else{
+
+					$ret->addedusers++;
+				}
+			}
+
+					
+        }//end of while
+        fclose($file);
+        return $ret;
+    }//end of do process moodleformat function
+	
+	
+	
 }//end of class
 
     
