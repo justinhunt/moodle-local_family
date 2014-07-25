@@ -65,9 +65,15 @@ class local_family_renderer extends plugin_renderer_base {
 		echo  get_string('familiescreated', 'local_family')  . $ret->createdfamilies . '<br />';
 		echo  get_string('membersadded', 'local_family')  . $ret->addedusers . '<br />';
 		echo  get_string('membersremoved', 'local_family')  . $ret->removedusers . '<br />';
+		foreach ($ret->messages as $message){
+			echo $message . '<br />';
+		}
 		foreach ($ret->errors as $error){
 			echo $error . '<br />';
 		}
+	
+		$batchuploadurl = new moodle_url('/local/family/view.php', array('action'=>'uploadfile'));
+		echo $this->output->single_button($batchuploadurl,get_string('backtouploadfamilies','local_family'));
 		echo $this->output->footer();
 		return;
 	}
@@ -84,9 +90,16 @@ class local_family_renderer extends plugin_renderer_base {
 		echo  get_string('previewfamiliescreated', 'local_family')  . $ret->createdfamilies . '<br />';
 		echo  get_string('previewmembersadded', 'local_family')  . $ret->addedusers . '<br />';
 		echo  get_string('previewmembersremoved', 'local_family')  . $ret->removedusers . '<br />';
+		foreach ($ret->messages as $message){
+			echo $message . '<br />';
+		}
 		foreach ($ret->errors as $error){
 			echo $error . '<br />';
 		}
+		
+		$batchuploadurl = new moodle_url('/local/family/view.php', array('action'=>'uploadfile'));
+		echo $this->output->single_button($batchuploadurl,get_string('backtouploadfamilies','local_family'));
+		
 		echo $this->output->footer();
 		return;
 	}

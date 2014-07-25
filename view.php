@@ -102,9 +102,9 @@ switch($action){
 		$data = $uploadfileform->get_data();
 		$uploadhandler = new local_family_upload_handler($data->uploadfile);
 		if($data->importformat ==0){
-			$ret = $uploadhandler->doprocess_moodleformat($data->preview,$data->stoponerror);
+			$ret = $uploadhandler->doprocess_moodleformat($data->preview,!$data->preview);
 		}else{
-			$ret = $uploadhandler->doprocess_exportformat($data->preview,$data->stoponerror);
+			$ret = $uploadhandler->doprocess_exportformat($data->preview,!$data->preview);
 		}
 		if($data->preview){
 			$renderer->show_preview_upload_results($ret);

@@ -256,17 +256,13 @@ class local_family_upload_file_form extends moodleform {
                         '',
                         'client');
 		
-		$yesnooptions = array(0=>get_string('no'),1=>get_string('yes'));
-		$mform->addElement('select', 'preview', get_string('previewonly','local_family'),$yesnooptions);
+		$importoptions = array(0=>get_string('realmode','local_family'),1=>get_string('previewmode','local_family'));
+		$mform->addElement('select', 'preview', get_string('importmode','local_family'),$importoptions);
         $mform->setType('preview', PARAM_INT);
 		$mform->setDefault('preview', 1);
 		
-		$mform->addElement('select', 'stoponerror', get_string('stoponerror','local_family'),$yesnooptions);
-        $mform->setType('stoponerror', PARAM_INT);
-		$mform->setDefault('stoponerror', 0);
-		
-		$yesnooptions = array(0=>get_string('moodleformat','local_family'),1=>get_string('sameasexportformat','local_family'));
-		$mform->addElement('select', 'importformat', get_string('importformat','local_family'),$yesnooptions);
+		$formatoptions = array(0=>get_string('moodleformat','local_family'),1=>get_string('sameasexportformat','local_family'));
+		$mform->addElement('select', 'importformat', get_string('importformat','local_family'),$formatoptions);
         $mform->setType('importformat', PARAM_INT);
 		$mform->setDefault('importformat', 0);
 		

@@ -45,7 +45,7 @@ defined('MOODLE_INTERNAL') || die();
      */
 	function local_family_fetch_family_by_member($userid) {
 		 global $DB;
-		 $sql = "SELECT * from {local_family} f " . 
+		 $sql = "SELECT f.* from {local_family} f " . 
 		 "INNER JOIN {local_family_members} fm " .
 		 "ON f.id = fm.familyid " . 
 		 "WHERE fm.userid = " . $userid;
@@ -68,7 +68,7 @@ defined('MOODLE_INTERNAL') || die();
      */
 	function local_family_fetch_family_by_username($username) {
 		 global $DB;
-		 $sql = "SELECT * from {local_family} f " . 
+		 $sql = "SELECT f.* from {local_family} f " . 
 		 "INNER JOIN {local_family_members} fm " .
 		 "ON f.id = fm.familyid " . 
 		 "INNER JOIN {user} u " .

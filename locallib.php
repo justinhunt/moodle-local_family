@@ -492,6 +492,8 @@ class local_family_upload_handler {
 		$ret->createdfamilies = 0;
 		$ret->addedusers=0;
 		$ret->removedusers=0;
+		$ret->previewfamilies= array();
+		$ret->messages= array();
 		$ret->errors= array();
         $file = $this->open_file();
 	
@@ -512,7 +514,7 @@ class local_family_upload_handler {
 				$linetype = LF_COMMENT;
 			}elseif(strpos($therow,'FAMILYKEY=')===0){
 				$linetype = LF_FAMILYKEY;
-			}elseif(strpos($therow,'FAMILYMEMBER=')===0){
+			}elseif(strpos($therow,'FAMILYPARENT=')===0){
 				$linetype = LF_SEARCHFAMILYKEY;
 			}
 			
@@ -526,15 +528,15 @@ class local_family_upload_handler {
 					$csvrow = explode(',',$therow);
 					if(count($csvrow) < 3) {
 						$ret->errors[] = get_string('toofewcols','local_family', $line);
-						if($stoponerror) { return $ret;}else{continue;}
+						if($stoponerror) {$ret->messages[] = get_string('import_cancelled_line','local_family', $line);return $ret;}else{continue;}
 					}
 					if(count($csvrow) > 3) {
 						$ret->errors[] = get_string('toomanycols','local_family', $line);
-						if($stoponerror) { return $ret;}else{continue;}
+						if($stoponerror) {$ret->messages[] = get_string('import_cancelled_line','local_family', $line);return $ret;}else{continue;}
 					}
 					if(trim($csvrow[1])!='child' && trim($csvrow[1])!='parent'){
 						$ret->errors[] = get_string('strangerelationship','local_family', $line);
-						if($stoponerror) { return $ret;}else{continue;}
+						if($stoponerror) {$ret->messages[] = get_string('import_cancelled_line','local_family', $line);return $ret;}else{continue;}
 					}
 
 			}
@@ -548,20 +550,20 @@ class local_family_upload_handler {
 					continue;
 				}else{
 					$ret->errors[] = get_string('nosuchfamily','local_family', $line);
-					if($stoponerror) { return $ret;}else{continue;}
+					if($stoponerror) {$ret->messages[] = get_string('import_cancelled_line','local_family', $line);return $ret;}else{continue;}
 				}
 			}
 			
-			//Process a search famly key line
+			//Process a search family key line
 			if($linetype==LF_SEARCHFAMILYKEY){
-				$familymember=str_replace('FAMILYMEMBER=','',trim($therow));
-				$family =  local_family_fetch_family_by_username($familymember);
+				$familyparent=str_replace('FAMILYPARENT=','',trim($therow));
+				$family =  local_family_fetch_family_by_username($familyparent);
 				if($family){
 					$currentfamily=$family;
 					continue;
 				}else{
-					$ret->errors[] = get_string('nosuchfamily','local_family', $line);
-					if($stoponerror) { return $ret;}else{continue;}
+					$ret->errors[] = get_string('nosuchfamily','local_family', $line);				
+					if($stoponerror) {$ret->messages[] = get_string('import_cancelled_line','local_family', $line);return $ret;}else{continue;}
 				}	
 			}
 			
@@ -577,16 +579,19 @@ class local_family_upload_handler {
 				$user = $DB->get_record('user',array('username'=>trim($csvrow[2])));
 				if(!$user){
 					$ret->errors[] = get_string('nosuchuser','local_family', $line);
-					if($stoponerror) { return $ret;}else{continue;}
+					if($stoponerror) {$ret->messages[] = get_string('import_cancelled_line','local_family', $line);return $ret;}else{continue;}
 				}
-				$family = local_family_fetch_family_by_member($user->id);
+				$family = local_family_fetch_family_by_username($user->username);
 				$member = $DB->get_record('local_family_members',array('userid'=>$user->id));
 				switch($linetype){
 				
 					case LF_ADD:
-						if($family && $family->id != $currentfamily->id){
+						if($family && $currentfamily && $family->id != $currentfamily->id){
 							$ret->errors[] = get_string('alreadyindifferentfamily','local_family', $line);
-							if($stoponerror) { return $ret;}else{continue;}
+							if($stoponerror) {$ret->messages[] = get_string('import_cancelled_line','local_family', $line);return $ret;}else{continue;}
+						}elseif($family && $currentfamily && $family->id == $currentfamily->id){
+							$ret->messages[] = get_string('alreadyinfamily','local_family', $line);
+							continue;
 						}else{
 							if(!$preview){
 							   if(!$currentfamily){
@@ -604,11 +609,14 @@ class local_family_upload_handler {
 								continue;
 							  }else{
 								$ret->errors[] = get_string('unabletoassignrole','local_family', $line);
-								if($stoponerror) { return $ret;}else{continue;}
+								if($stoponerror) {$ret->messages[] = get_string('import_cancelled_line','local_family', $line);return $ret;}else{continue;}
 							 }
 							}else{
 								 if(!$currentfamily){
-									$ret->createdfamilies++;
+									if(array_search($user->id,$ret->previewfamilies)===false){
+										$ret->previewfamilies[] = $user->id;
+										$ret->createdfamilies++;
+									}
 								 }
 								$ret->addedusers++;
 							}
@@ -617,10 +625,10 @@ class local_family_upload_handler {
 					case LF_REMOVE:
 						if(!$family){
 							$ret->errors[] = get_string('notinfamily','local_family', $line);
-							if($stoponerror) { return $ret;}else{continue;}
+							if($stoponerror) {$ret->messages[] = get_string('import_cancelled_line','local_family', $line);return $ret;}else{continue;}
 						}elseif($family->familykey != $currentfamily->familykey){
 							$ret->errors[] = get_string('wrongfamily','local_family', $line);
-							if($stoponerror) { return $ret;}else{continue;}
+							if($stoponerror) {$ret->messages[] = get_string('import_cancelled_line','local_family', $line);return $ret;}else{continue;}
 						}else{
 							if(!$preview){
 								if($bfm->delete_role($member->id)){	
@@ -628,7 +636,7 @@ class local_family_upload_handler {
 									continue;
 								}else{
 									$ret->errors[] = get_string('unabletoremovemember','local_family', $line);
-									if($stoponerror) { return $ret;}else{continue;}
+									if($stoponerror) {$ret->messages[] = get_string('import_cancelled_line','local_family', $line);return $ret;}else{continue;}
 								}
 							}else{
 								$ret->removedusers++;
@@ -660,7 +668,9 @@ class local_family_upload_handler {
 		$ret->createdfamilies = 0;
 		$ret->addedusers=0;
 		$ret->removedusers=0;
+		$ret->previewfamilies= array();
 		$ret->errors= array();
+		$ret->messages= array();
         $file = $this->open_file();
 	
 		$username_i=false;
@@ -707,81 +717,111 @@ class local_family_upload_handler {
 			//make sure the current row has the correct no of columns
 			if(count($csvrow) < $colcount) {
 				$ret->errors[] = get_string('toofewcols','local_family', $line);
-				if($stoponerror) { return $ret;}else{continue;}
+				if($stoponerror) {$ret->messages[] = get_string('import_cancelled_line','local_family', $line);return $ret;}else{continue;}
 			}
 			if(count($csvrow) > $colcount) {
 				$ret->errors[] = get_string('toomanycols','local_family', $line);
-				if($stoponerror) { return $ret;}else{continue;}
+				if($stoponerror) {$ret->messages[] = get_string('import_cancelled_line','local_family', $line);return $ret;}else{continue;}
 			}
 			if(trim($csvrow[$role_i])!='child' && trim($csvrow[$role_i])!='parent'){
 				$ret->errors[] = get_string('strangerelationship','local_family', $line);
-				if($stoponerror) { return $ret;}else{continue;}
+				if($stoponerror) {$ret->messages[] = get_string('import_cancelled_line','local_family', $line);return $ret;}else{continue;}
 			}
 			
 			//first make sure our user is valid
 			$user = $DB->get_record('user',array('username'=>trim($csvrow[$username_i])));
 			if(!$user){
 				$ret->errors[] = get_string('nosuchuser','local_family', $line);
-				if($stoponerror) { return $ret;}else{continue;}
+				if($stoponerror) {$ret->messages[] = get_string('import_cancelled_line','local_family', $line);return $ret;}else{continue;}
 			}
 
-			//process the family key column
+			//process the family key columns and search columns
+			//first check we have the correct data
 			$familykey=trim($csvrow[$familykey_i]);
-			if($familykey){
+			$searchkey=trim($csvrow[$parent_i]);
+			if(empty($familykey) && empty($searchkey)){
+				$ret->errors[] = get_string('nofamilykeyorsearchkey','local_family', $line);
+				if($stoponerror) {$ret->messages[] = get_string('import_cancelled_line','local_family', $line);return $ret;}else{continue;}
+			}
+			if(!empty($familykey) && !empty($searchkey)){
+				$ret->errors[] = get_string('bothfamilykeyandsearchkey','local_family', $line);
+				if($stoponerror) {$ret->messages[] = get_string('import_cancelled_line','local_family', $line);return $ret;}else{continue;}
+			}
+			
+			//fetch family by specified family key
+			if(!empty($familykey)){
 				$currentfamily = local_family_fetch_family_by_key($familykey);
 				if(!$currentfamily){
 					$ret->errors[] = get_string('nosuchfamily','local_family', $line);
-					if($stoponerror) { return $ret;}else{continue;}
+					if($stoponerror) {$ret->messages[] = get_string('import_cancelled_line','local_family', $line);return $ret;}else{continue;}
 				}
-			}
-			
-			//process the family search column
-			if(!$currentfamily){
-				$searchkey=trim($csvrow[$parent_i]);
-				if($searchkey){
-					$currentfamily =  local_family_fetch_family_by_username($searchkey);
+			//or fetch family by username of the parent key(search key)	
+			}else{
+				$currentfamily =  local_family_fetch_family_by_username($searchkey);
+				if($preview && !$currentfamily){
+					if(array_search($searchkey,$ret->previewfamilies)!==false){
+						//just to pass later logic the actual ID is meaningless
+						$currentfamily= new stdClass();
+						$currentfamily->id = -1;
+					}					
 				}
 			}
 			
 			//if we still did not get a family, we will need to add it.
-			if(!$currentfamily && !$preview){
-				$familykey = $bfm->get_new_familykey($user);
-				$familynotes ="";
-				$currentfamilyid =  $bfm->add_family($familykey, $familynotes);
-				$currentfamily = local_family_fetch_family_by_key($familykey);
-				if(!$currentfamily){
-					$ret->errors[] = get_string('familycreationfailed','local_family', $line);
-					if($stoponerror) { return $ret;}else{continue;}
-				}else{
-					$ret->createdfamilies++;
+			if(!$currentfamily){
+				//first get the parent user to form the family from
+				$parentuser = $DB->get_record('user',array('username'=>trim($searchkey)));
+				if(!$parentuser){
+					$ret->errors[] = get_string('nosuchparentuser','local_family', $line);
+					if($stoponerror) {$ret->messages[] = get_string('import_cancelled_line','local_family', $line);return $ret;}else{continue;}
 				}
-			}elseif($preview){
-				$ret->createdfamilies++;
+				
+				if($preview){
+					$ret->previewfamilies[] = $parentuser->username;
+					$ret->createdfamilies++;
+					//just to pass later logic the actual ID is meaningless
+					$currentfamily= new stdClass();
+					$currentfamily->id = -1;
+
+				}else{
+					$familykey = $bfm->get_new_familykey($parentuser);
+					$familynotes ="";
+					$currentfamilyid =  $bfm->add_family($familykey, $familynotes);
+					$currentfamily = local_family_fetch_family_by_key($familykey);
+					if(!$currentfamily){
+						$ret->errors[] = get_string('familycreationfailed','local_family', $line);
+						if($stoponerror) {$ret->messages[] = get_string('import_cancelled_line','local_family', $line);return $ret;}else{continue;}
+					}else{
+						$ret->createdfamilies++;
+					}
+				}
 			}
 		
-			//Now actually add the member
-			$existingfamily = local_family_fetch_family_by_member($user->id);
+			//check we are not already in a family
 			//$member = $DB->get_record('local_family_members',array('userid'=>$user->id));
-
+			//$existingfamily = local_family_fetch_family_by_member($member->id);
+			$existingfamily = local_family_fetch_family_by_username($user->username);	
 			if($existingfamily && $existingfamily->id != $currentfamily->id){
 				$ret->errors[] = get_string('alreadyindifferentfamily','local_family', $line);
-				if($stoponerror) { return $ret;}else{continue;}
-			}else{
-				if(!$preview){
-					  $familyid=$currentfamily->id;				  
-					  if( $bfm->add_role($familyid,$user->id,trim($csvrow[$role_i]))){
-						$ret->addedusers++;
-						continue;
-					  }else{
-						$ret->errors[] = get_string('unabletoassignrole','local_family', $line);
-						if($stoponerror) { return $ret;}else{continue;}
-					 }
-				}else{
-
-					$ret->addedusers++;
-				}
+				if($stoponerror) {$ret->messages[] = get_string('import_cancelled_line','local_family', $line);return $ret;}else{continue;}
+			}elseif($existingfamily && $existingfamily->id == $currentfamily->id){
+				$ret->messages[] = get_string('alreadyinfamily','local_family', $line);
+				continue;
 			}
-
+			
+			//finally lets add our member
+			if($preview){
+				$ret->addedusers++;			  
+			}else{
+				if( $bfm->add_role($currentfamily->id,$user->id,trim($csvrow[$role_i]))){
+					//echo ($currentfamily->id . ":" . $user->username . ":" . trim($csvrow[$role_i]) . "<br />"); 
+					$ret->addedusers++;
+					continue;
+				  }else{
+					$ret->errors[] = get_string('unabletoassignrole','local_family', $line);
+					if($stoponerror) {$ret->messages[] = get_string('import_cancelled_line','local_family', $line);return $ret;}else{continue;}
+				 }
+			}
 					
         }//end of while
         fclose($file);
