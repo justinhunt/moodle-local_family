@@ -232,6 +232,24 @@ defined('MOODLE_INTERNAL') || die();
 	}
 	
 	/**
+     * Is the passed in user, a child of the logged in user?
+     * @param integer $userid
+     * @return boolean  true =this is a valid child, false = not a valid child
+     */
+	
+	function local_family_is_users_child($childid) {
+		global $USER;
+		$children = local_family_fetch_child_users($USER->id);
+		if(!$children){return false;}
+		foreach($children as $child){
+			if($child->id == $childid){
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	/**
      * Is this a parent *not used internally*
      * @param integer $userid
      * @return boolean  true =this is a parent, false = not parent
