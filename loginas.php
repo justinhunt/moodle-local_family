@@ -94,7 +94,6 @@ switch($action){
 					$SESSION->wantsurl = "$CFG->wwwroot/";
 				}
 			}
-			
 
 			$children = local_family_fetch_child_users($USER->id);
 			$parents = local_family_fetch_parent_users($data->childid);
@@ -126,6 +125,14 @@ switch($action){
 
 			// User must be logged in.
 			$coursecontext = context_course::instance($course->id);
+			
+			//If the user who is a child has view grades capabilities, then we don't want
+			//to allow login as
+			if(has_capability("moodle/grade:viewall",$coursecontext)){
+				$message = get_string('childistoopowerful', 'local_family');
+				$renderer->show_loginas_error($message);
+				return;
+			}
 
 			// Login as this user and return to course home page.
 			\core\session\manager::loginas($data->childid, $coursecontext);

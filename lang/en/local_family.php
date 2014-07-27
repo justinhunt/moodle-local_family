@@ -91,6 +91,7 @@ $string['label_loginas'] = 'Login as Child';
 $string['loginasheading'] = 'Login as user: {$a}';
 $string['loginaserror'] = 'Unable to Login As Child';
 $string['invalidparentid'] = 'Parent ID did not match family of Child';
+$string['childistoopowerful'] = 'You can not login as this child. Their permissions are too great.';
 $string['loginaswarning'] = 'You are about to login as another member of your family. <br />Please do not submit course activities on their behalf.';
 $string['uploadfile'] = 'Upload a family defining a batch of family relationships';
 $string['musthavefile'] = 'You must upload a file';
