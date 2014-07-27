@@ -128,7 +128,8 @@ switch($action){
 			
 			//If the user who is a child has view grades capabilities, then we don't want
 			//to allow login as
-			if(has_capability("moodle/grade:viewall",$coursecontext)){
+			$childuser = $DB->get_record('user', array('id'=>$data->childid), '*', MUST_EXIST);
+			if(has_capability("moodle/grade:viewall",$coursecontext,$childuser)){
 				$message = get_string('childistoopowerful', 'local_family');
 				$renderer->show_loginas_error($message);
 				return;
