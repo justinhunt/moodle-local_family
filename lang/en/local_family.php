@@ -23,8 +23,7 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$string['family:addinstance'] = 'Add a family block';
-$string['family:myaddinstance'] = 'Add a family block to my moodle';
+$string['family:managefamiliies'] = 'Manage Families';
 $string['pluginname'] = 'Family';
 $string['family'] = 'Family';
 $string['listview'] = 'family Assignments';

@@ -137,10 +137,8 @@ class local_family_renderer extends plugin_renderer_base {
 			$fullname  = html_writer::tag('div', $fullname, array('class' => 'fullname'));
 			$fullnamecell  = new html_table_cell($fullname);
 		
-			$actionurl = '/local/family/view.php';
-			$messageurl = new moodle_url($actionurl, array());
-			
-			$messageurl = local_family_fetch_loginas_url($member->userid,2);
+			$actionurl = '/message/index.php';
+			$messageurl = new moodle_url($actionurl, array('id'=>$memberuser->id));
 			
 			$messagelink = html_writer::link($messageurl, get_string('messagelink', 'local_family'));
 			$messagecell = new html_table_cell($messagelink);

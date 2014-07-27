@@ -33,9 +33,15 @@ require_once($CFG->libdir . '/formslib.php');
 require_once($CFG->dirroot . '/local/family/locallib.php');
 require_once($CFG->dirroot . '/local/family/forms.php');
 
-admin_externalpage_setup('managefamilies');
+//this would restrict the page to only admins
+//admin_externalpage_setup('managefamilies');
 
 require_login();
+
+//only managers and editing teachers should get here really
+$context = context_system::instance();
+require_capability('local/family:managefamilies', $context);
+
 
 $action = required_param('action', PARAM_TEXT); //the user action to take
 $familyid =  optional_param('familyid',0, PARAM_INT); //the id of the group
@@ -44,9 +50,8 @@ $userid =  optional_param('userid',0, PARAM_INT); //the id of the group
 $role =  optional_param('role','', PARAM_TEXT); //the actual role name
 $courseid =  optional_param('courseid',0, PARAM_INT); //the courseid
 
-
-$context = context_system::instance();
 $PAGE->set_url('/local/family/view.php');
+$PAGE->set_context($context);
 $PAGE->set_heading($SITE->fullname);
 $PAGE->set_pagelayout('course');
 $PAGE->set_title(get_string('listview', 'local_family'));
@@ -55,13 +60,12 @@ $renderer = $PAGE->get_renderer('local_family');
 
 $bfm = new local_family_manager($familyid);
 
+
+
 // OUTPUT
 echo $renderer->header();
 $message=false;
 
-//only admins and editing teachers should get here really
-//if(!has_capability('local/family:managefamilies', $context) ){
-// just while debugging disable this J: 20140708
 if(false){
 	echo $renderer->heading(get_string('inadequatepermissions', 'local_family'), 3, 'main');
 	echo $renderer->footer();

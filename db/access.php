@@ -25,34 +25,13 @@
 defined('MOODLE_INTERNAL') || die();
 
 		$capabilities = array(
-
-			'local/family:myaddinstance' => array(
-				'captype' => 'write',
-				'contextlevel' => CONTEXT_SYSTEM,
-				'archetypes' => array(
-					'user' => CAP_ALLOW
-					)
-				),
-
-			'local/family:addinstance' => array(
-				'riskbitmask' => RISK_SPAM | RISK_XSS,
-				'captype' => 'write',
-				'contextlevel' => CONTEXT_SYSTEM,
-				'archetypes' => array(
-					'editingteacher' => CAP_ALLOW,
-					'manager' => CAP_ALLOW
-					)
-				),
-
 			'local/family:managefamilies' => array(
-				'riskbitmask' => RISK_SPAM | RISK_XSS,
+				'riskbitmask' => RISK_PERSONAL,
 				'captype' => 'write',
 				'contextlevel' => CONTEXT_SYSTEM,
 				'archetypes' => array(
 					'editingteacher' => CAP_ALLOW,
 					'manager' => CAP_ALLOW
 					)
-				),
-				
-			
+				)
 		);

@@ -23,6 +23,7 @@
  */
 
 defined('MOODLE_INTERNAL') || die();
+
 $ADMIN->add('root', new admin_category('local_family', get_string('family', 'local_family')));
 
 $ADMIN->add('local_family', new admin_externalpage('managefamilies', get_string('managefamilies', 'local_family'),
