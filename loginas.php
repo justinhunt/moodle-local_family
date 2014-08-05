@@ -134,6 +134,23 @@ switch($action){
 				$renderer->show_loginas_error($message);
 				return;
 			}
+			
+			//if parent cant see course we add them to the course viewer role
+			//this is necessary even when logging in as
+			//if that fails we just cancel out
+			//if(!has_capability("moodle/course:view",$coursecontext)){
+			if(!is_viewing($coursecontext, $USER->id)){
+				$courseviewerrole  = $DB->get_record('role', array('shortname'=>'courseviewer'));
+				if ($courseviewerrole && !user_has_role_assignment($USER->id, $courseviewerrole->id, $coursecontext->id)){ 				
+						role_assign($courseviewerrole->id, $USER->id, $coursecontext->id); 				
+				}else{
+					$message = "parent can't view this course";
+					$renderer->show_loginas_error($message);
+					return;
+				}
+
+			}
+			
 
 			// Login as this user and return to course home page.
 			\core\session\manager::loginas($data->childid, $coursecontext);

@@ -793,6 +793,14 @@ class local_family_upload_handler {
 						if($stoponerror) {$ret->messages[] = get_string('import_cancelled_line','local_family', $line);return $ret;}else{continue;}
 					}else{
 						$ret->createdfamilies++;
+						//now we also need to add our parent to make it real
+						if( $bfm->add_role($currentfamily->id,$parentuser->id,'parent')){
+							//echo ($currentfamily->id . ":" . $user->username . ":" . trim($csvrow[$role_i]) . "<br />"); 
+							$ret->addedusers++;
+						}else{
+							$ret->errors[] = get_string('unabletoassignrole','local_family', $line);
+							if($stoponerror) {$ret->messages[] = get_string('import_cancelled_line','local_family', $line);return $ret;}else{continue;}
+						}
 					}
 				}
 			}
