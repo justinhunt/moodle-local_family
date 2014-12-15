@@ -23,7 +23,7 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$string['family:managefamiliies'] = 'Manage Families';
+$string['family:managefamilies'] = 'Manage Families';
 $string['pluginname'] = 'Family';
 $string['family'] = 'Family';
 $string['listview'] = 'family Assignments';

@@ -320,38 +320,28 @@ class local_family_user_selector extends user_selector_base {
         //by default wherecondition retrieves all users except the deleted, not
         //confirmed and guest
         list($wherecondition, $params) = $this->search_sql($search, 'u');
-
-
         $fields      = 'SELECT ' . $this->required_fields_sql('u');
         $countfields = 'SELECT COUNT(1)';
-
             $sql = " FROM {user} u
                  WHERE $wherecondition
                        AND u.deleted = 0 AND NOT (u.auth='webservice') ";
  
        
-
         list($sort, $sortparams) = users_order_by_sql('u', $search, $this->accesscontext);
         $order = ' ORDER BY ' . $sort;
-
         if (!$this->is_validating()) {
             $potentialmemberscount = $DB->count_records_sql($countfields . $sql, $params);
             if ($potentialmemberscount > $this->maxusersperpage) {
                 return $this->too_many_results($search, $potentialmemberscount);
             }
         }
-
         $availableusers = $DB->get_records_sql($fields . $sql . $order, array_merge($params, $sortparams));
-
         if (empty($availableusers)) {
             return array();
         }
-
-
     
         $groupname = get_string('potentialmembers', 'local_family');
       
-
         return array($groupname => $availableusers);
     }
     
