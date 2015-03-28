@@ -69,6 +69,14 @@ class local_family_manager {
     public function add_role($familyid,$userid, $role ) {
         global $DB,$USER;
 
+		 //The user id should not be zero here, its difficult to see how that might happen
+		 //but it does for some reason when user import messes up in unknown circumstances
+		 //so we check for that and other strangeness here
+		 if(!$userid || $userid==0 || empty($role)){
+		 	return false;
+		 }
+		 
+		 //fetch the users family, we expect they are not in the family, so this is just a check
          $family =  local_family_fetch_family_by_member($userid);
          
        if (empty($family)) {
@@ -89,6 +97,11 @@ class local_family_manager {
     
     public function edit_role($memberid, $familyid,$userid, $role ) {
         global $DB,$USER;
+
+		//We shouldn't arrive here unchecked, but we double check anyway
+		 if(!$userid || $userid==0 || empty($role)){
+		 	return false;
+		 }
 
             $member = new stdClass();
             $member->id = $memberid;
@@ -806,14 +819,14 @@ class local_family_upload_handler {
 			}
 		
 			//check we are not already in a family
-			//$member = $DB->get_record('local_family_members',array('userid'=>$user->id));
-			//$existingfamily = local_family_fetch_family_by_member($member->id);
 			$existingfamily = local_family_fetch_family_by_username($user->username);	
 			if($existingfamily && $existingfamily->id != $currentfamily->id){
 				$ret->errors[] = get_string('alreadyindifferentfamily','local_family', $line);
 				if($stoponerror) {$ret->messages[] = get_string('import_cancelled_line','local_family', $line);return $ret;}else{continue;}
 			}elseif($existingfamily && $existingfamily->id == $currentfamily->id){
-				$ret->messages[] = get_string('alreadyinfamily','local_family', $line);
+				//we probably don't need to report this 'error', in most cases 
+				//the parent was simply added when the child was. : Justin 20150328
+				//$ret->messages[] = get_string('alreadyinfamily','local_family', $line);
 				continue;
 			}
 			
