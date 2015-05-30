@@ -24,8 +24,14 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$ADMIN->add('root', new admin_category('local_family', get_string('family', 'local_family')));
 
+$ADMIN->add('root', new admin_category('local_family', get_string('family', 'local_family')));
+/*
+* attempted to add a settings page so could specify the role to use. But gave up. Still hard coded to "parent"
+$ADMIN->add('local_family', new admin_externalpage('familysettings', get_string('settings', 'local_family'),
+        $CFG->wwwroot."/local/family/admin/settings.php",
+        'moodle/site:config'))
+*/
 $ADMIN->add('local_family', new admin_externalpage('managefamilies', get_string('managefamilies', 'local_family'),
         $CFG->wwwroot."/local/family/view.php?action=listall",
         'moodle/site:config'));
